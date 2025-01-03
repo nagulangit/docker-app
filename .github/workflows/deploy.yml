@@ -19,10 +19,16 @@ jobs:
       - name: Build Docker image
         run: docker build -t my-docker-app .
 
-      - name: Stop and remove the old container
+      - name: Stop and remove the old container if it exists
         run: |
-          docker stop my-app-container || true
-          docker rm my-app-container || true
+          container_id=$(docker ps -aq -f name=my-app-container)
+          if [ -n "$container_id" ]; then
+            echo "Stopping and removing container: $container_id"
+            docker stop my-app-container || true
+            docker rm my-app-container || true
+          else
+            echo "No container named 'my-app-container' found. Skipping stop and remove."
+          fi
 
       - name: Deploy the new container
         run: docker run -d -p 3000:3000 --name my-app-container my-docker-app
