@@ -10,15 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Step 1: Checkout the repository code
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Step 2: Set up Docker
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
+      # Step 3: Build Docker image with a tag based on commit SHA
       - name: Build Docker image
-        run: docker build -t my-docker-app .
+        run: |
+          IMAGE_TAG="my-docker-app:${GITHUB_SHA}"
+          docker build -t $IMAGE_TAG .
 
+      # Step 4: Stop and remove the old container if it exists
       - name: Stop and remove the old container if it exists
         run: |
           container_id=$(docker ps -aq -f name=my-app-container)
@@ -30,5 +36,12 @@ jobs:
             echo "No container named 'my-app-container' found. Skipping stop and remove."
           fi
 
+      # Step 5: Deploy the new container using the built image
       - name: Deploy the new container
-        run: docker run -d -p 3000:3000 --name my-app-container my-docker-app
+        run: |
+          docker run -d -p 3000:3000 --name my-app-container my-docker-app:${GITHUB_SHA}
+        
+      # Optional: Clean up unused Docker images to save space
+      - name: Clean up unused Docker images
+        run: |
+          docker image prune -af
